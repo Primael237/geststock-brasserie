@@ -1,0 +1,4 @@
+export function ClientsPage() { return <div><h2 className="text-2xl font-bold text-gray-900 mb-6">🏪 Clients</h2><div className="card"><p className="text-gray-500 text-sm">Module clients — à venir.</p></div></div>; }
+export function SalesPage() { return <div><h2 className="text-2xl font-bold text-gray-900 mb-6">💰 Ventes</h2><div className="card"><p className="text-gray-500 text-sm">Module ventes — à venir.</p></div></div>; }
+export function PackagingPage() { return <div><h2 className="text-2xl font-bold text-gray-900 mb-6">♻️ Emballages</h2><div className="card"><p className="text-gray-500 text-sm">Module emballages — à venir.</p></div></div>; }
+export function CashPage() { return <div><h2 className="text-2xl font-bold text-gray-900 mb-6">🔒 Caisse</h2><div className="card"><p className="text-gray-500 text-sm">Module caisse — à venir.</p></div></div>; }
