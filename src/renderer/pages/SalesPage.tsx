@@ -189,7 +189,12 @@ export default function SalesPage() {
   const packagingDebtCrates = ticketMv.cratesTaken - ticketMv.emptyCratesReturned;
   const packagingDebtBottles = ticketMv.bottlesTaken - ticketMv.emptyBottlesReturned;
 
-  const addToTicket=(p:Product)=>{setTicket(prev=>[...prev,{product:p,quantity:1,mode:'crate',emballagesApportes:1}]);setSearch('');sr.current?.focus()};
+  // Produit déjà dans le panier : +1 sur sa ligne (et +1 emballage si la ligne était en échange complet)
+  const addToTicket=(p:Product)=>{setTicket(prev=>{
+    const i=prev.findIndex(t=>t.product.id===p.id);
+    if(i<0) return [...prev,{product:p,quantity:1,mode:'crate',emballagesApportes:1}];
+    return prev.map((t,idx)=>idx===i?{...t,quantity:t.quantity+1,emballagesApportes:t.emballagesApportes===t.quantity?t.emballagesApportes+1:t.emballagesApportes}:t);
+  });setSearch('');sr.current?.focus()};
   const upQty=(i:number,d:number)=>{setTicket(prev=>prev.map((t,idx)=>idx===i?{...t,quantity:Math.max(0,t.quantity+d)}:t).filter(t=>t.quantity>0))};
   const toggleMode=(i:number)=>{setTicket(prev=>prev.map((t,idx)=>idx===i?{...t,mode:t.mode==='crate'?'loose':'crate'}:t))};
   const upEmb=(i:number,v:number)=>{setTicket(prev=>prev.map((t,idx)=>idx===i?{...t,emballagesApportes:Math.max(0,v)}:t))};
