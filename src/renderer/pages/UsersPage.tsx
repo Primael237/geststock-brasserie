@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import PasswordInput from '../components/PasswordInput';
+import { useSettingsStore } from '../store/settingsStore';
 
 interface UserInfo {
   id: string;
@@ -28,6 +29,18 @@ export default function UsersPage() {
   const [resetTarget, setResetTarget] = useState<UserInfo | null>(null);
   const [resetPassword, setResetPassword] = useState('');
   const [resetDone, setResetDone] = useState(false);
+
+  // Nom du dépôt (affiché sur les tickets et factures)
+  const { depotName, setDepotName } = useSettingsStore();
+  const [depotInput, setDepotInput] = useState(depotName);
+  const [depotMsg, setDepotMsg] = useState('');
+  useEffect(() => { setDepotInput(depotName); }, [depotName]);
+
+  const handleSaveDepot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = await setDepotName(depotInput);
+    setDepotMsg(result.success ? 'Nom du dépôt enregistré.' : (result.error || "Erreur lors de l'enregistrement."));
+  };
 
   const loadUsers = async () => {
     const result = await window.electronAPI.listUsers();
@@ -118,6 +131,17 @@ export default function UsersPage() {
           {showCreate ? 'Annuler' : '+ Nouvel utilisateur'}
         </button>
       </div>
+
+      {/* Nom du dépôt */}
+      <form onSubmit={handleSaveDepot} className="card mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Nom du dépôt</h3>
+        <p className="text-gray-500 text-xs mb-3">Affiché en en-tête des tickets et des factures.</p>
+        <div className="flex gap-2">
+          <input type="text" value={depotInput} onChange={(e) => { setDepotInput(e.target.value); setDepotMsg(''); }} className="input-field flex-1" placeholder="Ex : Dépôt Ericson Akwa" />
+          <button type="submit" className="btn-primary" disabled={!depotInput.trim() || depotInput.trim() === depotName}>Enregistrer</button>
+        </div>
+        {depotMsg && <p className="text-xs mt-2 text-gray-600">{depotMsg}</p>}
+      </form>
 
       {/* Messages */}
       {successMsg && (

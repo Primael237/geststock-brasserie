@@ -65,6 +65,17 @@ function Barcode({ seed }: { seed: string }) {
   );
 }
 
+// Liste des produits d'une vente enregistrée (items venant de getSaleItems)
+function SaleItemLines({ items, className = '' }: { items: any[]; className?: string }) {
+  if (items.length === 0) return null;
+  return (
+    <table className={`w-full text-[10px] ${className}`}><tbody>{items.map((it:any,i:number)=>{
+      const crate=(it.quantity_full_crates||0)>0;
+      return(<tr key={i}><td className="text-left">{it.product_name} x{crate?it.quantity_full_crates:it.quantity_loose_bottles} {crate?'c':'u'}</td><td className="text-right font-bold">{(it.total_price||0).toLocaleString()}F</td></tr>);
+    })}</tbody></table>
+  );
+}
+
 interface Product { id: string; name: string; category: string; format: string; brewery_name: string; sell_price_liquid: number; units_per_crate: number; consigne_amount: number; stock_full_crates: number; stock_loose_bottles: number; }
 type SellMode = 'crate' | 'loose';
 interface TicketItem { product: Product; quantity: number; mode: SellMode; emballagesApportes: number; }
@@ -445,6 +456,8 @@ export default function SalesPage() {
               <p className="font-bold text-xs">{depotName}</p>
               <p>{new Date(selectedSale.created_at).toLocaleString('fr-FR')}</p>
               <hr className="border-dashed"/>
+              <SaleItemLines items={selectedSaleItems}/>
+              {selectedSaleItems.length>0&&<hr className="border-dashed"/>}
               <p className="font-bold text-sm">TOTAL LIQUIDE: {selectedSale.total_amount?.toLocaleString()} FCFA</p>
               <p>{pmLabel(selectedSale.payment_method)} | {selectedSale.seller_name}</p>
               <hr className="border-dashed"/>
@@ -463,13 +476,14 @@ export default function SalesPage() {
       </div>
       )}
 
-      {reprintTarget&&showPrint&&(()=>{const mv=summarizeMovement(selectedSaleItems);return(<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={()=>{setShowPrint(false);setReprintTarget(null)}}><div className="bg-white w-[300px] font-mono text-xs p-4 shadow-2xl" onClick={e=>e.stopPropagation()}><div className="text-center mb-2"><p className="font-bold text-sm">{depotName}</p><p className="text-[10px]">{new Date(reprintTarget.created_at).toLocaleString('fr-FR')}</p><hr className="my-1 border-dashed"/></div><p className="text-center font-bold text-lg">TOTAL LIQUIDE: {reprintTarget.total_amount?.toLocaleString()} FCFA</p><p className="text-center text-[10px]">{pmLabel(reprintTarget.payment_method)} | {reprintTarget.seller_name}</p><hr className="my-1 border-dashed"/><p className="text-[10px] font-bold text-center">Client: {reprintTarget.client_name||'Client comptoir'}</p><p className="text-[10px] text-center">Casiers pris: {mv.cratesTaken}{mv.bottlesTaken>0?` | Bout: ${mv.bottlesTaken}`:''}</p><p className="text-[10px] text-center">Emballages rapportés: {mv.emptyCratesReturned} casier(s){mv.emptyBottlesReturned>0?` + ${mv.emptyBottlesReturned} bout.`:''}</p><hr className="my-1 border-dashed"/><p className="text-center text-[10px]">DUPLICATA — Merci !</p><Barcode seed={reprintTarget.id||'x'}/></div></div>);})()}
+      {reprintTarget&&showPrint&&(()=>{const mv=summarizeMovement(selectedSaleItems);return(<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={()=>{setShowPrint(false);setReprintTarget(null)}}><div className="bg-white w-[300px] font-mono text-xs p-4 shadow-2xl" onClick={e=>e.stopPropagation()}><div className="text-center mb-2"><p className="font-bold text-sm">{depotName}</p><p className="text-[10px]">{new Date(reprintTarget.created_at).toLocaleString('fr-FR')}</p><hr className="my-1 border-dashed"/></div><SaleItemLines items={selectedSaleItems}/>{selectedSaleItems.length>0&&<hr className="my-1 border-dashed"/>}<p className="text-center font-bold text-lg">TOTAL LIQUIDE: {reprintTarget.total_amount?.toLocaleString()} FCFA</p><p className="text-center text-[10px]">{pmLabel(reprintTarget.payment_method)} | {reprintTarget.seller_name}</p><hr className="my-1 border-dashed"/><p className="text-[10px] font-bold text-center">Client: {reprintTarget.client_name||'Client comptoir'}</p><p className="text-[10px] text-center">Casiers pris: {mv.cratesTaken}{mv.bottlesTaken>0?` | Bout: ${mv.bottlesTaken}`:''}</p><p className="text-[10px] text-center">Emballages rapportés: {mv.emptyCratesReturned} casier(s){mv.emptyBottlesReturned>0?` + ${mv.emptyBottlesReturned} bout.`:''}</p><hr className="my-1 border-dashed"/><p className="text-center text-[10px]">DUPLICATA — Merci !</p><Barcode seed={reprintTarget.id||'x'}/></div></div>);})()}
       {showInvoice&&selectedSale&&(()=>{const mv=summarizeMovement(selectedSaleItems);return(<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={()=>setShowInvoice(false)}><div className="bg-white w-[650px] max-h-[85vh] overflow-y-auto p-8 shadow-2xl text-sm" onClick={e=>e.stopPropagation()}><div className="flex justify-between border-b pb-4 mb-4"><div><h2 className="text-xl font-bold">FACTURE</h2><p className="text-xs">{depotName}</p></div><div className="text-right text-xs"><p>Date: {new Date(selectedSale.created_at).toLocaleDateString('fr-FR')}</p><p>N°: F-{selectedSale.id?.slice(0,8).toUpperCase()}</p><p>Vendeur: {selectedSale.seller_name}</p></div></div>
         <p className="font-bold mb-2">{selectedSale.client_name||'Client comptoir'}</p>
         <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
           <div className="bg-blue-50 rounded-lg p-2"><p className="text-gray-500">Casiers pris</p><p className="font-bold text-lg text-blue-700">{mv.cratesTaken}{mv.bottlesTaken>0?` (+${mv.bottlesTaken} bout.)`:''}</p></div>
           <div className="bg-amber-50 rounded-lg p-2"><p className="text-gray-500">Emballages rapportés</p><p className="font-bold text-lg text-amber-700">{mv.emptyCratesReturned} casier(s){mv.emptyBottlesReturned>0?` + ${mv.emptyBottlesReturned} bout.`:''}</p></div>
         </div>
+        <h4 className="font-bold mb-2">DÉTAIL</h4><table className="w-full mb-4 text-xs"><thead><tr className="border-b"><th>Produit</th><th className="text-center">Qté</th><th>Mode</th><th className="text-center">Emballages rendus</th><th className="text-right">Prix</th></tr></thead><tbody>{selectedSaleItems.map((it:any,i:number)=>{const crate=(it.quantity_full_crates||0)>0;const q=crate?it.quantity_full_crates:it.quantity_loose_bottles;return(<tr key={i} className="border-b"><td>{it.product_name}</td><td className="text-center">{q}</td><td>{crate?'Casier':'Bouteille'}</td><td className="text-center">{it.quantity_empties_returned||0}/{q}</td><td className="text-right font-bold">{(it.total_price||0).toLocaleString()}F</td></tr>)})}</tbody></table>
         <div className="border-t pt-3"><div className="space-y-1 text-sm"><div className="flex justify-between font-bold text-lg"><span>TOTAL LIQUIDE</span><span>{selectedSale.total_amount?.toLocaleString()} FCFA</span></div>{((selectedSale.packaging_debt_crates||0)!==0||(selectedSale.packaging_debt_bottles||0)!==0)&&<p className="text-xs text-gray-500">Emballages : {formatPackagingDelta(selectedSale.packaging_debt_crates||0,selectedSale.packaging_debt_bottles||0)}</p>}</div><p className="text-xs mt-2">{pmLabel(selectedSale.payment_method)}</p></div></div></div>);})()}
     </div>
   );

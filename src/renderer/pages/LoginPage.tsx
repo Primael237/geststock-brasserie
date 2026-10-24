@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useSettingsStore } from '../store/settingsStore';
 import PasswordInput from '../components/PasswordInput';
 import appIcon from '../assets/app-icon.png';
 
@@ -78,6 +79,8 @@ export default function LoginPage() {
     setSuLoading(false);
 
     if (result.success) {
+      // Le nom du dépôt vient d'être enregistré : on recharge les paramètres
+      useSettingsStore.getState().loadSettings();
       setInfo(`Compte "${suUsername.trim()}" créé. Vous pouvez maintenant vous connecter.`);
       setUsername(suUsername.trim());
       goToLogin();

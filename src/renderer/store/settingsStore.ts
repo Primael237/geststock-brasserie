@@ -6,6 +6,7 @@ interface SettingsState {
   depotName: string;
   loaded: boolean;
   loadSettings: () => Promise<void>;
+  setDepotName: (name: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -26,5 +27,13 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     } catch (_) {
       set({ loaded: true });
     }
+  },
+
+  setDepotName: async (name: string) => {
+    const clean = name.trim();
+    if (!clean) return { success: false, error: 'Le nom du dépôt est obligatoire.' };
+    const r = await window.electronAPI.updateSetting('depot_name', clean);
+    if (r.success) set({ depotName: clean });
+    return r;
   },
 }));
