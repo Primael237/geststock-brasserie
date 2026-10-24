@@ -179,7 +179,7 @@ export default function SalesPage() {
     window.electronAPI.getSaleItems(selectedSale.id).then(r=>{if(r.success)setSelectedSaleItems(r.items)});
   },[selectedSale?.id]);
   useEffect(()=>{
-    setResults(prods.filter(p=>(!catFilter||p.category===catFilter)&&(search.length<1||p.name.toLowerCase().includes(search.toLowerCase()))).slice(0,12));
+    setResults(prods.filter(p=>(!catFilter||p.category===catFilter)&&(search.length<1||p.name.toLowerCase().includes(search.toLowerCase()))));
   },[search,catFilter,prods]);
 
   // Prix: sell_price_liquid = prix CASIER. Bouteille = sell_price_liquid / units_per_crate

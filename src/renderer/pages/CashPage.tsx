@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Lock, Package, Scale, CheckCircle2, Upload } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 const BILLS = [
@@ -69,105 +70,132 @@ export default function CashPage() {
 
   if (!stats) return <div className="p-6 text-gray-500">Chargement...</div>;
 
+  const fmt = (n: number) => n.toLocaleString('fr-FR');
+  const signed = (n: number) => `${n > 0 ? '+' : ''}${fmt(n)}`;
+  const discrepancyText = discrepancy < 0 ? 'text-red-600' : 'text-primary-600';
+  const packagingBalance = packagingInv.crates_empty - packagingInv.crates_full;
+
+  const denominationRow = (b: { value: number; label: string }) => (
+    <tr key={b.value}>
+      <td className="py-1.5 font-medium text-gray-700">{b.label}</td>
+      <td className="py-1.5">
+        <input
+          type="number" min={0}
+          className="input-field w-20 mx-auto block text-center py-1"
+          value={billetage[b.value] || ''}
+          onChange={e => setBilletage(prev => ({ ...prev, [b.value]: +e.target.value || 0 }))}
+        />
+      </td>
+      <td className="py-1.5 text-right text-gray-600">{fmt((billetage[b.value] || 0) * b.value)} FCFA</td>
+    </tr>
+  );
+
+  const packagingTile = (icon: React.ReactNode, label: string, value: React.ReactNode) => (
+    <div className="border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+      <div className="shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-gray-500 leading-tight">{label}</p>
+        <div className="mt-1 text-center">{value}</div>
+      </div>
+    </div>
+  );
+
+  const packagingInput = (key: 'crates_full' | 'crates_empty') => (
+    <input
+      type="number" min={0}
+      className="w-full text-center text-2xl font-bold text-gray-900 border-0 border-b border-transparent hover:border-gray-200 focus:border-brand-gold focus:outline-none focus:ring-0 bg-transparent"
+      value={packagingInv[key] || ''}
+      placeholder="0"
+      onChange={e => setPackagingInv(prev => ({ ...prev, [key]: +e.target.value || 0 }))}
+    />
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">🔒 Caisse & Clôture</h2>
-          <p className="text-sm text-gray-500 mt-1">{closures.length} clôture(s) enregistrée(s)</p>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><Lock size={22} className="text-brand-gold" /> Caisse & Clôture</h2>
+        <p className="text-sm text-gray-500 mt-1">{closures.length} clôture(s) enregistrée(s)</p>
       </div>
 
       {success && <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3">{success}</div>}
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">{error}</div>}
 
       {isGerantOrAdmin ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Billetage de caisse */}
-          <div className="card">
-            <h3 className="text-lg font-bold mb-4">💵 Billetage de caisse</h3>
-            <div className="space-y-3">
-              <p className="text-sm text-gray-500 font-medium">Billets</p>
-              {BILLS.map(b => (
-                <div key={b.value} className="flex items-center gap-3">
-                  <span className="w-24 text-sm font-medium">{b.label}</span>
-                  <input
-                    type="number" min={0}
-                    className="input-field w-20 text-center"
-                    value={billetage[b.value] || ''}
-                    onChange={e => setBilletage(prev => ({ ...prev, [b.value]: +e.target.value || 0 }))}
-                  />
-                  <span className="text-xs text-gray-400">= {((billetage[b.value] || 0) * b.value).toLocaleString()} F</span>
-                </div>
-              ))}
-              <p className="text-sm text-gray-500 font-medium mt-4">Pièces</p>
-              {COINS.map(b => (
-                <div key={b.value} className="flex items-center gap-3">
-                  <span className="w-24 text-sm font-medium">{b.label}</span>
-                  <input
-                    type="number" min={0}
-                    className="input-field w-20 text-center"
-                    value={billetage[b.value] || ''}
-                    onChange={e => setBilletage(prev => ({ ...prev, [b.value]: +e.target.value || 0 }))}
-                  />
-                  <span className="text-xs text-gray-400">= {((billetage[b.value] || 0) * b.value).toLocaleString()} F</span>
-                </div>
-              ))}
+        <>
+          {/* Bandeau récapitulatif (rouge si la caisse est en manque) */}
+          <div className={`rounded-xl shadow-sm text-white grid grid-cols-3 divide-x divide-white/20 ${discrepancy < 0 ? 'bg-red-700' : 'bg-primary-700'}`}>
+            <div className="p-5 text-center">
+              <p className="text-xs font-semibold uppercase tracking-wide text-white/80">Théorique système</p>
+              <p className="text-2xl font-bold mt-1">{fmt(theoreticalAmount)} <span className="text-sm font-semibold">FCFA</span></p>
+            </div>
+            <div className="p-5 text-center">
+              <p className="text-xs font-semibold uppercase tracking-wide text-white/80">Total compté (réel)</p>
+              <p className="text-2xl font-bold mt-1">{fmt(realAmount)} <span className="text-sm font-semibold">FCFA</span></p>
+            </div>
+            <div className="p-5 text-center">
+              <p className="text-xs font-semibold uppercase tracking-wide text-white/80">Écart</p>
+              <p className="text-2xl font-bold mt-1">{signed(discrepancy)} <span className="text-sm font-semibold">FCFA</span></p>
+              <p className="text-[11px] text-white/70">(Écart = Réel − Théorique)</p>
+            </div>
+          </div>
 
-              {/* Résumé billetage */}
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <div className="flex justify-between text-sm">
-                  <span>Total compté (réel)</span>
-                  <span className="font-bold text-lg">{realAmount.toLocaleString()} FCFA</span>
-                </div>
-                <div className="flex justify-between text-sm mt-1">
-                  <span>Théorique système</span>
-                  <span className="font-bold">{theoreticalAmount.toLocaleString()} FCFA</span>
-                </div>
-                <div className={`flex justify-between text-sm mt-2 pt-2 border-t font-bold ${discrepancy === 0 ? 'text-green-600' : discrepancy > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  <span>Écart</span>
-                  <span className="text-lg">{discrepancy > 0 ? '+' : ''}{discrepancy.toLocaleString()} FCFA</span>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Billetage de caisse */}
+            <div className="card lg:col-span-2">
+              <h3 className="text-base font-bold mb-3">Billetage de caisse</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-500">
+                    <th className="text-left font-medium pb-2">Dénomination</th>
+                    <th className="font-medium pb-2">Quantité</th>
+                    <th className="text-right font-medium pb-2">Sous-total</th>
+                  </tr>
+                </thead>
+                <tbody>{BILLS.map(denominationRow)}</tbody>
+                <tbody className="border-t border-gray-200">
+                  <tr><td colSpan={3} className="pt-2" /></tr>
+                  {COINS.map(denominationRow)}
+                </tbody>
+              </table>
+              <div className="mt-4 bg-primary-50 rounded-lg px-4 py-3 flex justify-between items-center">
+                <span className="text-xs font-bold uppercase text-gray-700">Total compté (réel)</span>
+                <span className="font-bold text-primary-700">{fmt(realAmount)} FCFA</span>
+              </div>
+            </div>
+
+            {/* Inventaire emballages */}
+            <div className="card">
+              <h3 className="text-base font-bold mb-3">Inventaire emballages fin de journée</h3>
+              <div className="space-y-3">
+                {packagingTile(<Package size={32} className="text-primary-600" />, 'Casiers pleins vendus', packagingInput('crates_full'))}
+                {packagingTile(<Package size={32} className="text-brand-amber" />, 'Casiers vides reçus', packagingInput('crates_empty'))}
+                {packagingTile(<Scale size={32} className="text-gray-700" />, 'Solde physique', <p className="text-2xl font-bold text-gray-900">{packagingBalance}</p>)}
               </div>
             </div>
           </div>
 
-          {/* Inventaire emballages + Actions */}
-          <div className="space-y-4">
-            {/* Inventaire emballages */}
-            <div className="card">
-              <h3 className="text-lg font-bold mb-4">♻️ Inventaire emballages fin de journée</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="w-32 text-sm">Casiers pleins vendus</span>
-                  <input type="number" min={0} className="input-field w-20 text-center"
-                    value={packagingInv.crates_full || ''}
-                    onChange={e => setPackagingInv(prev => ({ ...prev, crates_full: +e.target.value || 0 }))} />
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="w-32 text-sm">Casiers vides reçus</span>
-                  <input type="number" min={0} className="input-field w-20 text-center"
-                    value={packagingInv.crates_empty || ''}
-                    onChange={e => setPackagingInv(prev => ({ ...prev, crates_empty: +e.target.value || 0 }))} />
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="w-32 text-sm">Solde physique</span>
-                  <span className="font-bold text-lg">{packagingInv.crates_empty - packagingInv.crates_full}</span>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Résumé de la clôture */}
+            <div className="card lg:col-span-2">
+              <h3 className="text-base font-bold mb-3">Résumé de la clôture</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-gray-600">Théorique système</span><span className="font-bold">{fmt(theoreticalAmount)} FCFA</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Total compté (réel)</span><span className="font-bold">{fmt(realAmount)} FCFA</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Écart (Réel − Théorique)</span><span className={`font-bold ${discrepancyText}`}>{signed(discrepancy)} FCFA</span></div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="card space-y-3">
-              <button onClick={handleClose} className="btn-primary w-full py-3 text-base font-bold">
-                ✅ Valider clôture & Sauvegarder
+            <div className="flex flex-col gap-3">
+              <button onClick={handleClose} className="btn-primary w-full py-4 text-base font-bold flex items-center justify-center gap-2">
+                <CheckCircle2 size={18} /> Valider la clôture
               </button>
-              <button onClick={() => setShowExport(true)} className="btn-secondary w-full text-sm">
-                💾 Exporter base chiffrée (USB/Dossier)
+              <button onClick={() => setShowExport(true)} className="w-full py-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2">
+                <Upload size={16} /> Exporter les données (USB/Dossier)
               </button>
             </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="card">
           <p className="text-gray-500 text-sm">🔒 Accès restreint — Seuls le Gérant et le Super Admin peuvent accéder à la clôture de caisse.</p>
